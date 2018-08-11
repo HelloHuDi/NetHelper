@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">NetHelper</string>
+    <string name="unknown">未知</string>
+    <string name="net_none">无网络</string>
+</resources>

@@ -1,4 +1,4 @@
-package com.hd.nethelper
+package com.hd.nethelpersample
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4

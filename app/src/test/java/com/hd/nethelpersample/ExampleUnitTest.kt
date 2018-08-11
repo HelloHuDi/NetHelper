@@ -1,4 +1,4 @@
-package com.hd.nethelper
+package com.hd.nethelpersample
 
 import org.junit.Test
 
