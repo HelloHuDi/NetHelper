@@ -4,8 +4,20 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
+import android.net.TrafficStats
+import android.net.wifi.WifiManager
+import android.os.Build
 import android.support.v4.content.ContextCompat
 import android.util.Log
+import java.io.BufferedReader
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import java.io.InputStreamReader
+import java.net.Inet4Address
+import java.net.NetworkInterface
+import java.net.SocketException
+import java.util.regex.Pattern
+
 
 /**
  * Created by hd on 2018/8/10 .
@@ -21,7 +33,7 @@ const val NET_TAG = "NetworkStatusExample"
 fun getNetworkManager(context: Context): ConnectivityManager? {
     if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.INTERNET) ==
             PackageManager.PERMISSION_GRANTED) {
-        return context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+        return context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
     }
     Log.e(NET_TAG, "android.permission.INTERNET is denied")
     return null
@@ -35,7 +47,12 @@ fun getNetworkInfo(context: Context): NetworkInfo? {
 fun getNetworkInfo(context: Context, type: Int): NetworkInfo? {
     if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_NETWORK_STATE) ==
             PackageManager.PERMISSION_GRANTED) {
-        return getNetworkManager(context)?.getNetworkInfo(type)
+        val manager = getNetworkManager(context)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            getNetworkManager(context)?.getNetworkInfo(manager?.activeNetwork)
+        } else {
+            getNetworkManager(context)?.getNetworkInfo(type)
+        }
     }
     Log.e(NET_TAG, "android.permission.ACCESS_NETWORK_STATE is denied")
     return null
@@ -86,5 +103,112 @@ fun getNetConnectTypeStr(context: Context): String {
 
 /** 获取连接网络ip地址*/
 fun getNetConnectAddress(context: Context): String {
-    return "00:00:00:00"
+    val info = getNetworkInfo(context)
+    TrafficStats.getMobileRxBytes()
+    var address = "00.00.00.00"
+    if (null != info && info.isConnected) {
+        when (info.type) {
+            ConnectivityManager.TYPE_MOBILE -> {
+                try {
+                    val en = NetworkInterface.getNetworkInterfaces()
+                    while (en.hasMoreElements()) {
+                        val enumIpAddress = en.nextElement().inetAddresses
+                        while (enumIpAddress.hasMoreElements()) {
+                            val initAddress = enumIpAddress.nextElement()
+                            if (!initAddress.isLoopbackAddress && initAddress is Inet4Address) {
+                                return initAddress.getHostAddress()
+                            }
+                        }
+                    }
+                } catch (e: SocketException) {
+                    e.printStackTrace()
+                }
+            }
+            ConnectivityManager.TYPE_WIFI -> {
+                val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
+                val wifiInfo = wifiManager?.connectionInfo
+                address = if (null != wifiInfo) intIP2StringIP(wifiInfo.ipAddress) else address
+            }
+        }
+    }
+    return address
 }
+
+private fun intIP2StringIP(ip: Int): String {
+    return (ip and 0xFF).toString() + "." + (ip shr 8 and 0xFF) + "." +
+            (ip shr 16 and 0xFF) + "." + (ip shr 24 and 0xFF)
+}
+
+/**获取正在连接的Wifi密码
+ * 需要root权限
+ * */
+fun getWifiPassword(): Map<String, String> {
+    val wifiParMap = hashMapOf<String, String>()
+    var process: Process? = null
+    var dataOutputStream: DataOutputStream? = null
+    var dataInputStream: DataInputStream? = null
+    val wifiConf = StringBuffer()
+    try {
+        process = Runtime.getRuntime().exec("su")
+        if (null == process) {
+            return wifiParMap
+        }
+        dataOutputStream = DataOutputStream(process.outputStream)
+        dataInputStream = DataInputStream(process.inputStream)
+        dataOutputStream.writeBytes("cat /data/misc/wifi/*.conf\n")
+        dataOutputStream.writeBytes("exit\n")
+        dataOutputStream.flush()
+        val inputStreamReader = InputStreamReader(dataInputStream, "UTF-8")
+        val bufferedReader = BufferedReader(inputStreamReader)
+        var line: String?
+        do {
+            line = bufferedReader.readLine()
+            if (line != null)
+                wifiConf.append(line)
+        } while (line != null)
+        bufferedReader.close()
+        inputStreamReader.close()
+        process.waitFor()
+    } catch (e: Exception) {
+        e.printStackTrace()
+    } finally {
+        try {
+            dataOutputStream?.close()
+            dataInputStream?.close()
+            process?.destroy()
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+    val network = Pattern.compile("network=\\{([^\\}]+)\\}", Pattern.DOTALL)
+    val networkMatcher = network.matcher(wifiConf.toString())
+    while (networkMatcher.find()) {
+        val networkBlock = networkMatcher.group()
+        val ssid = Pattern.compile("ssid=\"([^\"]+)\"")
+        val ssidMatcher = ssid.matcher(networkBlock)
+        var password: String
+        var sid: String
+        if (ssidMatcher.find()) {
+            sid = ssidMatcher.group(1)
+            val psk = Pattern.compile("psk=\"([^\"]+)\"")
+            val pskMatcher = psk.matcher(networkBlock)
+            password = if (pskMatcher.find()) {
+                pskMatcher.group(1)
+            } else {
+                ""
+            }
+            wifiParMap[sid] = password
+            Log.d("hd", "打印wifi 密码：$wifiParMap")
+        }
+    }
+    return wifiParMap
+}
+
+/**查询当前上下行网速*/
+fun getNetSpeed(context: Context, unit: Int): Pair<Long, Long> {
+    return Pair(1000, 100000)
+}
+
+
+
+
