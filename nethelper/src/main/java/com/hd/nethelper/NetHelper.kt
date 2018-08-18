@@ -1,6 +1,7 @@
 package com.hd.nethelper
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
@@ -8,6 +9,8 @@ import android.net.TrafficStats
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.support.v4.content.ContextCompat
+import android.telephony.TelephonyManager
+import android.text.format.Formatter
 import android.util.Log
 import java.io.BufferedReader
 import java.io.DataInputStream
@@ -30,6 +33,24 @@ import java.util.regex.Pattern
 
 const val NET_TAG = "NetworkStatusExample"
 
+fun openWifiSetting(context: Context) {
+    context.applicationContext.startActivity(
+            Intent(android.provider.Settings.ACTION_WIFI_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+}
+
+fun openNetSetting(context: Context) {
+    context.applicationContext.startActivity(
+            Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+}
+
+fun setWifiEnabled(context: Context, enable: Boolean) {
+    getWifiManager(context)?.isWifiEnabled = enable
+}
+
+fun getWifiManager(context: Context): WifiManager? {
+    return context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
+}
+
 fun getNetworkManager(context: Context): ConnectivityManager? {
     if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.INTERNET) ==
             PackageManager.PERMISSION_GRANTED) {
@@ -49,9 +70,10 @@ fun getNetworkInfo(context: Context, type: Int): NetworkInfo? {
             PackageManager.PERMISSION_GRANTED) {
         val manager = getNetworkManager(context)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            getNetworkManager(context)?.getNetworkInfo(manager?.activeNetwork)
+            val info = manager?.getNetworkInfo(manager.activeNetwork)
+            return if (info?.type == type) info else null
         } else {
-            getNetworkManager(context)?.getNetworkInfo(type)
+            manager?.getNetworkInfo(type)
         }
     }
     Log.e(NET_TAG, "android.permission.ACCESS_NETWORK_STATE is denied")
@@ -78,6 +100,7 @@ fun checkNetConnect(uri: String): Boolean {
         val exec = Runtime.getRuntime().exec("ping -c 2 -W 2 $uri")
         exec.waitFor() == 0
     } catch (e: Exception) {
+        e.printStackTrace()
         false
     }
 }
@@ -99,6 +122,58 @@ fun getNetConnectType(context: Context): Int {
  * */
 fun getNetConnectTypeStr(context: Context): String {
     return getNetworkInfo(context)?.typeName ?: context.resources.getString(R.string.net_none)
+}
+
+/** 检查网络连接类型详情
+ * [NetworkType]
+ * */
+fun getNetConnectTypeInfo(context: Context): NetworkType {
+    var netType = NetworkType.NETWORK_NO
+    val info = getNetworkInfo(context)
+    if (null != info && info.isConnected && info.isAvailable) {
+        when (info.type) {
+            ConnectivityManager.TYPE_ETHERNET ->
+                netType = NetworkType.NETWORK_ETHERNET
+            ConnectivityManager.TYPE_WIFI ->
+                netType = NetworkType.NETWORK_WIFI
+            ConnectivityManager.TYPE_MOBILE ->
+                when (info.subtype) {
+                    TelephonyManager.NETWORK_TYPE_GSM,
+                    TelephonyManager.NETWORK_TYPE_GPRS,
+                    TelephonyManager.NETWORK_TYPE_CDMA,
+                    TelephonyManager.NETWORK_TYPE_EDGE,
+                    TelephonyManager.NETWORK_TYPE_1xRTT,
+                    TelephonyManager.NETWORK_TYPE_IDEN
+                    -> netType = NetworkType.NETWORK_2G
+                    TelephonyManager.NETWORK_TYPE_TD_SCDMA,
+                    TelephonyManager.NETWORK_TYPE_EVDO_A,
+                    TelephonyManager.NETWORK_TYPE_UMTS,
+                    TelephonyManager.NETWORK_TYPE_EVDO_0,
+                    TelephonyManager.NETWORK_TYPE_HSDPA,
+                    TelephonyManager.NETWORK_TYPE_HSUPA,
+                    TelephonyManager.NETWORK_TYPE_HSPA,
+                    TelephonyManager.NETWORK_TYPE_EVDO_B,
+                    TelephonyManager.NETWORK_TYPE_EHRPD,
+                    TelephonyManager.NETWORK_TYPE_HSPAP
+                    -> netType = NetworkType.NETWORK_3G
+                    TelephonyManager.NETWORK_TYPE_IWLAN,
+                    TelephonyManager.NETWORK_TYPE_LTE
+                    -> netType = NetworkType.NETWORK_4G
+                    else -> {
+                        val subtypeName = info.subtypeName
+                        netType = if (subtypeName.equals("TD-SCDMA", ignoreCase = true)
+                                || subtypeName.equals("WCDMA", ignoreCase = true)
+                                || subtypeName.equals("CDMA2000", ignoreCase = true)) {
+                            NetworkType.NETWORK_3G
+                        } else {
+                            NetworkType.NETWORK_UNKNOWN
+                        }
+                    }
+                }
+            else -> netType = NetworkType.NETWORK_UNKNOWN
+        }
+    }
+    return netType
 }
 
 /** 获取连接网络ip地址*/
@@ -125,24 +200,40 @@ fun getNetConnectAddress(context: Context): String {
                 }
             }
             ConnectivityManager.TYPE_WIFI -> {
-                val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
+                val wifiManager = getWifiManager(context)
                 val wifiInfo = wifiManager?.connectionInfo
-                address = if (null != wifiInfo) intIP2StringIP(wifiInfo.ipAddress) else address
+                address = if (null != wifiInfo) Formatter.formatIpAddress(wifiInfo.ipAddress) else address
             }
         }
     }
     return address
 }
 
-private fun intIP2StringIP(ip: Int): String {
-    return (ip and 0xFF).toString() + "." + (ip shr 8 and 0xFF) + "." +
-            (ip shr 16 and 0xFF) + "." + (ip shr 24 and 0xFF)
-}
-
-/**获取正在连接的Wifi密码
+/**获取当前正在使用的Wifi的密码
  * 需要root权限
  * */
-fun getWifiPassword(): Map<String, String> {
+fun getConnectWifiPassword(context: Context): String {
+    val password = ""
+    val passwordMap = getAllWifiPassword()
+    if (passwordMap.isEmpty()) return password
+    val wifiManager = getWifiManager(context)
+    val wifiInfo = wifiManager?.connectionInfo
+    if (null != wifiInfo) {
+        for (pas in passwordMap) {
+            var name = wifiInfo.ssid
+            name = if (name.startsWith("\"") and name.endsWith("\""))
+                name.substring(1, name.length - 1) else name
+            if (pas.key == name)
+                return pas.value
+        }
+    }
+    return password
+}
+
+/**获取所有有连接并保存记录的Wifi密码
+ * 需要root权限
+ * */
+fun getAllWifiPassword(): Map<String, String> {
     val wifiParMap = hashMapOf<String, String>()
     var process: Process? = null
     var dataOutputStream: DataOutputStream? = null
@@ -198,7 +289,6 @@ fun getWifiPassword(): Map<String, String> {
                 ""
             }
             wifiParMap[sid] = password
-            Log.d("hd", "打印wifi 密码：$wifiParMap")
         }
     }
     return wifiParMap
