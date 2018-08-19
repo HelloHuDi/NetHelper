@@ -21,6 +21,13 @@ android {
         }
     }
 
+    lintOptions {
+        abortOnError false
+    }
+}
+
+tasks.withType(Javadoc) {
+    enabled = false
 }
 
 dependencies {

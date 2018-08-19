@@ -1,3 +1,4 @@
+@file:JvmName("NetHelper")
 package com.hd.nethelper
 
 import android.content.Context
@@ -8,6 +9,7 @@ import android.net.NetworkInfo
 import android.net.TrafficStats
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.provider.Settings
 import android.support.v4.content.ContextCompat
 import android.telephony.TelephonyManager
 import android.text.format.Formatter
@@ -25,17 +27,12 @@ import java.util.regex.Pattern
 /**
  * Created by hd on 2018/8/10 .
  * network helper
- * </p>
- * need permission :
- * [android.Manifest.permission.INTERNET]
- * [android.Manifest.permission.ACCESS_NETWORK_STATE]
  */
-
 const val NET_TAG = "NetworkStatusExample"
 
 fun openWifiSetting(context: Context) {
     context.applicationContext.startActivity(
-            Intent(android.provider.Settings.ACTION_WIFI_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            Intent(Settings.ACTION_WIFI_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
 
 fun openNetSetting(context: Context) {
@@ -51,7 +48,8 @@ fun getWifiManager(context: Context): WifiManager? {
     return context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
 }
 
-fun getNetworkManager(context: Context): ConnectivityManager? {
+fun getNetworkManager(context: Context?): ConnectivityManager? {
+    if(null==context)return null
     if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.INTERNET) ==
             PackageManager.PERMISSION_GRANTED) {
         return context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?

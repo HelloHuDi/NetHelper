@@ -1,3 +1,4 @@
+@file:JvmName("NetObserver")
 package com.hd.nethelper
 
 import java.util.*
@@ -10,7 +11,11 @@ import java.util.*
 
 private const val TAG_LISTENER = "net_observer_listener"
 
-private var netWeakMap = WeakHashMap<String, NetworkListener>()
+private val netWeakMap = WeakHashMap<String, NetworkListener>()
+
+fun getNetWeakMap(): WeakHashMap<String, NetworkListener> {
+    return netWeakMap
+}
 
 fun addObserver(listener: NetworkListener) {
     addObserver(TAG_LISTENER, listener)
@@ -27,4 +32,34 @@ fun clearObserver(tag: String) {
 fun clearAllObserver() {
     netWeakMap.clear()
 }
+
+inline fun notifyIsAvailable(notify: (listener: NetworkListener) -> Unit) {
+    val wakMap = getNetWeakMap()
+    for (listener in wakMap.values) {
+        if (null == listener) return
+        notify(listener)
+    }
+}
+
+inline fun notifySpeed(notify: (listener: NetWorkSpeedListener) -> Unit) {
+    val wakMap = getNetWeakMap()
+    for (listener in wakMap.values) {
+        if (null == listener) return
+        if (listener is NetWorkSpeedListener)
+            notify(listener)
+    }
+}
+
+inline fun notifyQuality(notify: (listener: NetWorkQualityListener) -> Unit) {
+    val wakMap = getNetWeakMap()
+    for (listener in wakMap.values) {
+        if (null == listener) return
+        if (listener is NetWorkQualityListener)
+            notify(listener)
+    }
+}
+
+
+
+
 
