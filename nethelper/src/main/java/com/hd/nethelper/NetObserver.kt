@@ -50,15 +50,6 @@ inline fun notifySpeed(notify: (listener: NetWorkSpeedListener) -> Unit) {
     }
 }
 
-inline fun notifyQuality(notify: (listener: NetWorkQualityListener) -> Unit) {
-    val wakMap = getNetWeakMap()
-    for (listener in wakMap.values) {
-        if (null == listener) return
-        if (listener is NetWorkQualityListener)
-            notify(listener)
-    }
-}
-
 
 
 

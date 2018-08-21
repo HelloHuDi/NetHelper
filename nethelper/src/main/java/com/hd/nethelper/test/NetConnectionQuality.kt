@@ -1,9 +1,8 @@
-package com.hd.nethelper
+package com.hd.nethelper.test
 
 
 /**
  * Created by hd on 2018/8/19 .
- * copy from [com.facebook.network.connectionclass]
  */
 enum class NetConnectionQuality{
     /**

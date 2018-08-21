@@ -1,5 +1,7 @@
 package com.hd.nethelper
 
+import com.hd.nethelper.test.NetConnectionQuality
+
 
 /**
  * Created by hd on 2018/8/18 .
@@ -13,12 +15,6 @@ interface NetworkListener {
 
 interface NetWorkSpeedListener : NetworkListener {
     
-    /** 上下行网速*/
-    fun speed(up: Long, down: Long)
-}
-
-interface NetWorkQualityListener : NetworkListener {
-    
-    /** 上下行网络质量*/
-    fun quality(upQuality: NetConnectionQuality, downQuality: NetConnectionQuality)
+    /** 上下行网速及网络质量*/
+    fun netSpeed(up: Double, upQuality: NetConnectionQuality, down: Double, downQuality: NetConnectionQuality)
 }

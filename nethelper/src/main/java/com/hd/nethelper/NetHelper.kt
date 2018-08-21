@@ -1,4 +1,5 @@
 @file:JvmName("NetHelper")
+
 package com.hd.nethelper
 
 import android.content.Context
@@ -6,21 +7,18 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
-import android.net.TrafficStats
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import android.support.v4.content.ContextCompat
 import android.telephony.TelephonyManager
-import android.text.format.Formatter
 import android.util.Log
+import com.stealthcopter.networktools.IPTools
+import com.stealthcopter.networktools.Ping
 import java.io.BufferedReader
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.InputStreamReader
-import java.net.Inet4Address
-import java.net.NetworkInterface
-import java.net.SocketException
 import java.util.regex.Pattern
 
 
@@ -49,7 +47,7 @@ fun getWifiManager(context: Context): WifiManager? {
 }
 
 fun getNetworkManager(context: Context?): ConnectivityManager? {
-    if(null==context)return null
+    if (null == context) return null
     if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.INTERNET) ==
             PackageManager.PERMISSION_GRANTED) {
         return context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
@@ -95,8 +93,7 @@ fun checkNetConnect(context: Context): Boolean {
  * */
 fun checkNetConnect(uri: String): Boolean {
     return try {
-        val exec = Runtime.getRuntime().exec("ping -c 2 -W 2 $uri")
-        exec.waitFor() == 0
+        Ping.onAddress(uri).setTimeOutMillis(2000).setTimes(2).doPing().isReachable
     } catch (e: Exception) {
         e.printStackTrace()
         false
@@ -174,37 +171,14 @@ fun getNetConnectTypeInfo(context: Context): NetworkType {
     return netType
 }
 
-/** 获取连接网络ip地址*/
+/** 获取连接网络ipv4地址*/
 fun getNetConnectAddress(context: Context): String {
     val info = getNetworkInfo(context)
-    TrafficStats.getMobileRxBytes()
-    var address = "00.00.00.00"
-    if (null != info && info.isConnected) {
-        when (info.type) {
-            ConnectivityManager.TYPE_MOBILE -> {
-                try {
-                    val en = NetworkInterface.getNetworkInterfaces()
-                    while (en.hasMoreElements()) {
-                        val enumIpAddress = en.nextElement().inetAddresses
-                        while (enumIpAddress.hasMoreElements()) {
-                            val initAddress = enumIpAddress.nextElement()
-                            if (!initAddress.isLoopbackAddress && initAddress is Inet4Address) {
-                                return initAddress.getHostAddress()
-                            }
-                        }
-                    }
-                } catch (e: SocketException) {
-                    e.printStackTrace()
-                }
-            }
-            ConnectivityManager.TYPE_WIFI -> {
-                val wifiManager = getWifiManager(context)
-                val wifiInfo = wifiManager?.connectionInfo
-                address = if (null != wifiInfo) Formatter.formatIpAddress(wifiInfo.ipAddress) else address
-            }
-        }
+    return if (null != info && info.isConnected) {
+        IPTools.getLocalIPv4Address().hostAddress.toString()
+    } else {
+        ""
     }
-    return address
 }
 
 /**获取当前正在使用的Wifi的密码
@@ -290,11 +264,6 @@ fun getAllWifiPassword(): Map<String, String> {
         }
     }
     return wifiParMap
-}
-
-/**查询当前上下行网速*/
-fun getNetSpeed(context: Context, unit: Int): Pair<Long, Long> {
-    return Pair(1000, 100000)
 }
 
 

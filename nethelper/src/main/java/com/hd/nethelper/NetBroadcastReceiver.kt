@@ -19,5 +19,4 @@ open class NetBroadcastReceiver : BroadcastReceiver() {
             notifyIsAvailable { listener -> listener.isAvailable(available) }
         }
     }
-    
 }

@@ -4,16 +4,24 @@ import android.net.ConnectivityManager
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
+import android.widget.Toast
 import com.hd.nethelper.*
+import com.hd.nethelper.test.ping.NetPingTest
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlin.concurrent.thread
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), NetworkListener {
+    
+    override fun isAvailable(available: Boolean) {
+        Toast.makeText(this, "网络可用 ：$available",Toast.LENGTH_SHORT).show()
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        addObserver(this)
         printContent(
                 "😀当前网络是否连接 ：" + checkNetConnect(this)
                         + "\n😀当前网络是否使用的手机网络 ：" + checkNetConnectByType(this, ConnectivityManager.TYPE_MOBILE)
@@ -32,6 +40,14 @@ class MainActivity : AppCompatActivity() {
             val state = checkNetConnect(ipStr)
             runOnUiThread { printContent("\n😀ping $ipStr : $state") }
         }
+        
+        //ping test
+        NetPingTest("www.baidu.com", 6, object : NetPingTest.NetPingTestListener {
+            
+            override fun reportPing(finished: Boolean, instantRtt: Double, avgRtt: Double) {
+                Log.d("hd", String.format("ping结果，是否结束：%b , 实时时长 %f ms ,最终时长 %f ms", finished, instantRtt, avgRtt))
+            }
+        }).start()
     }
     
     private fun printContent(str: String) {
