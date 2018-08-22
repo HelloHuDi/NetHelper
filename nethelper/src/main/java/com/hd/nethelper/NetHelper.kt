@@ -93,7 +93,7 @@ fun checkNetConnect(context: Context): Boolean {
  * */
 fun checkNetConnect(uri: String): Boolean {
     return try {
-        Ping.onAddress(uri).setTimeOutMillis(2000).setTimes(2).doPing().isReachable
+        Ping.onAddress(uri).setTimeOutMillis(2000).setTimes(5).doPing().isReachable
     } catch (e: Exception) {
         e.printStackTrace()
         false

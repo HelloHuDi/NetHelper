@@ -41,15 +41,6 @@ inline fun notifyIsAvailable(notify: (listener: NetworkListener) -> Unit) {
     }
 }
 
-inline fun notifySpeed(notify: (listener: NetWorkSpeedListener) -> Unit) {
-    val wakMap = getNetWeakMap()
-    for (listener in wakMap.values) {
-        if (null == listener) return
-        if (listener is NetWorkSpeedListener)
-            notify(listener)
-    }
-}
-
 
 
 

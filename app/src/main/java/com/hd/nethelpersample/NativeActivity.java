@@ -5,11 +5,13 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import com.hd.nethelper.NetHelper;
+import com.hd.nethelper.test.ping.NetPingTest;
 
 public class NativeActivity extends AppCompatActivity {
 
@@ -46,6 +48,14 @@ public class NativeActivity extends AppCompatActivity {
                         printContent("\n😀ping " + ipStr + " = " + state);
                     }
                 });
+            }
+        }).start();
+
+        //ping test
+        new NetPingTest("www.baidu.com", 6, new NetPingTest.NetPingTestListener() {
+            @Override
+            public void reportPing(boolean finished, double instantRtt, double avgRtt) {
+                Log.d("hd", String.format("ping结果，是否结束：%b , 实时时长 %f ms ,最终时长 %f ms", finished, instantRtt, avgRtt));
             }
         }).start();
     }
