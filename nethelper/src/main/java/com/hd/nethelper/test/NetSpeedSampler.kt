@@ -5,13 +5,12 @@ import android.util.Log
 import com.hd.nethelper.NetWorkSpeedListener
 import com.hd.nethelper.checkNetConnect
 import com.hd.nethelper.notifyIsAvailable
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Created by hd on 2018/8/21 .
  */
-abstract class NetSpeedSampler {
+abstract class NetSpeedSampler(protected val context: Context,private val listener: NetWorkSpeedListener) {
     
     companion object {
         
@@ -24,11 +23,7 @@ abstract class NetSpeedSampler {
     
     protected abstract fun sampling()
     
-    protected val executor = Executors.newFixedThreadPool(2)
-    
     protected val TAG = this.javaClass.simpleName
-    
-    protected lateinit var context:Context
     
     /**unit : kbps*/
     protected var up: Double = 0.0
@@ -41,21 +36,15 @@ abstract class NetSpeedSampler {
     
     private val mSamplingCounter = AtomicInteger()
     
-    private lateinit var listener: NetWorkSpeedListener
-    
     private val qualityControl = NetQualityControl()
     
-    private fun startSampling(listener: NetWorkSpeedListener) {
-        if (mSamplingCounter.getAndIncrement() == 0) {
-            this@NetSpeedSampler.listener = listener
-            sampling()
-        }
-    }
-    
-    fun startSampling(context: Context, listener: NetWorkSpeedListener) {
+    fun startSampling() {
         if (checkNetConnect(context)) {
-            this.context=context.applicationContext
-            startSampling(listener)
+            if (mSamplingCounter.getAndIncrement() == 0) {
+                sampling()
+            }else{
+                Log.e(TAG,"always sampling")
+            }
         } else {
             notifyIsAvailable { it -> it.isAvailable(false) }
             Log.e(TAG, "No network")
