@@ -7,6 +7,18 @@
 ```
 implementation 'com.hd:nethelper:1.0'
 ```
+### 添加：
+
+```
+allprojects {
+    repositories {
+        //...
+        maven {
+            url "https://jitpack.io"
+        }
+    }
+}
+```
 
 ### 示例：
 
