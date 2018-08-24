@@ -72,6 +72,12 @@ abstract class NetSpeedSampler(protected val context: Context,private val listen
         this@NetSpeedSampler.mode = mode
     }
     
+    protected fun formatSpeed(speed: Double): String {
+        val df = java.text.NumberFormat.getNumberInstance()
+        df.maximumFractionDigits = 2
+        return df.format(speed)
+    }
+    
     protected fun reportStep(step:Int) {
         listener.step(step)
     }

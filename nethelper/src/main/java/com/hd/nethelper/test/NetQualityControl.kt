@@ -9,8 +9,6 @@ package com.hd.nethelper.test
 class NetQualityControl {
     
     companion object {
-        val DEFAULT_SAMPLES_TO_QUALITY_CHANGE = 5.0
-        val BYTES_TO_BITS = 8
         /**
          * Default values for determining quality of data connection.
          * Bandwidth numbers are in Kilobits per second (kbps).
@@ -19,9 +17,6 @@ class NetQualityControl {
         var DEFAULT_POOR_BANDWIDTH = 150
         var DEFAULT_MODERATE_BANDWIDTH = 550
         var DEFAULT_GOOD_BANDWIDTH = 2000
-        const val DEFAULT_HYSTERESIS_PERCENT: Long = 20
-        const val HYSTERESIS_TOP_MULTIPLIER = 100.0 / (100.0 - DEFAULT_HYSTERESIS_PERCENT)
-        const val HYSTERESIS_BOTTOM_MULTIPLIER = (100.0 - DEFAULT_HYSTERESIS_PERCENT) / 100.0
     }
     
     fun reset() {

@@ -22,8 +22,8 @@ class MainActivity : AppCompatActivity(), NetworkListener {
     
     override fun isAvailable(available: Boolean) {
         Toast.makeText(this, "网络可用 ：$available", Toast.LENGTH_SHORT).show()
-        if (!available) openWifiSetting(this)
         netAvailable=available
+        if (!available) openWifiSetting(this)
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {

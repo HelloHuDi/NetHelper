@@ -28,13 +28,15 @@ import java.util.concurrent.atomic.AtomicInteger
  * 使用场景：联网行为前做预判
  * 测试流程：不会同步测试上下行网速，优先测试下载速度，
  * 进度(step)：DOWN_LINK_SAMPLING --> UP_LINK_SAMPLING  or WHOLE_LINK_SAMPLING
- * 注意，借用第三方测速平台，有可能会出现不稳定或者访问失败等情况
+ * 缺点：借用第三方测速平台，有可能会出现不稳定或者访问失败等情况，不建议使用
  */
 open class NetSpeedActiveSampler(context: Context, listener: NetWorkSpeedListener) : NetSpeedSampler(context, listener) {
-    
+   
     override fun sampling() {
         var selfLat = 0.0
         var selfLon = 0.0
+        //http://www.speedtest.net.speedtest-config.php
+        //http://www.speedtest.net.speedtest-servers-static.php
         val api = RetrofitProvider.getInstance(context.applicationContext).api
         api.getLatitudeLongitude().map(Function<ResponseBody, Boolean> { responseBody ->
             val triple = getLocation(responseBody, selfLat, selfLon)
@@ -175,7 +177,6 @@ open class NetSpeedActiveSampler(context: Context, listener: NetWorkSpeedListene
                         downloadedByte.addAndGet(len)
                         endTime = System.currentTimeMillis()
                         downloadElapsedTime = (endTime - startTime) / 1000.0
-                        //实时
                         instantDownloadRate = if (downloadedByte.get() >= 0) {
                             round((downloadedByte.get() * 8 / (1000 * 1000) / downloadElapsedTime), 2)
                         } else {
@@ -229,7 +230,6 @@ open class NetSpeedActiveSampler(context: Context, listener: NetWorkSpeedListene
                         dos.write(buffer, 0, buffer.size)
                         dos.flush()
                         uploadedKByte.addAndGet(buffer.size / 1024)
-                        //实时
                         uploadElapsedTime = (System.currentTimeMillis() - startTimes) / 1000.0
                         instantUploadRate = if (uploadedKByte.get() >= 0) {
                             round((uploadedKByte.get() / 1000.0 * 8 / uploadElapsedTime), 2)
@@ -262,12 +262,6 @@ open class NetSpeedActiveSampler(context: Context, listener: NetWorkSpeedListene
     }
     
     private val executor = Executors.newFixedThreadPool(4)
-    
-    private fun formatSpeed(speed: Double): String {
-        val df = java.text.NumberFormat.getNumberInstance()
-        df.maximumFractionDigits = 2
-        return df.format(speed)
-    }
     
     private fun getKbpsSpeed(mbps: Double): Double {
         return mbps * 1024 / 8

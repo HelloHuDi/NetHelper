@@ -11,7 +11,7 @@
         android:theme="@style/AppTheme">
         <!--.NativeActivity-->
         <activity
-            android:name=".MainActivity"
+            android:name=".NativeActivity"
             android:windowSoftInputMode="stateHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

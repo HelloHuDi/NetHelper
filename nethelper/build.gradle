@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'com.novoda.bintray-release'
 
 android {
     compileSdkVersion 28
@@ -39,7 +40,15 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     api 'com.github.stealthcopter:AndroidNetworkTools:0.4.0'
     implementation 'io.reactivex.rxjava2:rxjava:2.1.9'
-    implementation 'io.reactivex.rxjava2:rxandroid:2.0.1'
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
     implementation 'com.squareup.retrofit2:adapter-rxjava2:2.3.0'
+}
+
+publish {
+    userOrg = 'hellohudi'
+    groupId = 'com.hd'
+    artifactId = 'nethelper'
+    publishVersion = '1.0'
+    desc = 'a tool library on the state of the network'
+    website = 'https://github.com/HelloHuDi/NetHelper'
 }
